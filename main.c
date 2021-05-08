@@ -4,13 +4,19 @@
 #define CODEC8 8
 #define CODEC8EXT 142
 
-#define PREAMBLE_SIZE 4
-#define DATA_FIELD_LENGTH_SIZE 4
 #define CODEC_ID_SIZE 1
 #define NUMBER_OF_DATA1_SIZE 1
-#define AVL_DATA_SIZE 1280
 #define NUMBER_OF_DATA2_SIZE 1
 #define CRC16_SIZE 4
+//TCP
+#define PREAMBLE_SIZE 4
+#define DATA_FIELD_LENGTH_SIZE 4
+//UDP
+#define LENGTH_SIZE 2
+#define PACKET_ID_SIZE 2
+#define PACKET_TYPE_SIZE 1
+#define AVL_PACKET_ID_SIZE 1
+#define IMEI_LENGTH_SIZE 2
 
 #define TIMESTAMP_SIZE 8
 #define PRIORITY_SIZE 1
@@ -20,13 +26,6 @@
 #define ANGLE_SIZE 2
 #define SATELLITES_SIZE 1
 #define SPEED_SIZE 2
-
-//UDP
-#define LENGTH_SIZE 2
-#define PACKET_ID_SIZE 2
-#define PACKET_TYPE_SIZE 1
-#define AVL_PACKET_ID_SIZE 1
-#define IMEI_LENGTH_SIZE 2
 
 #define MAX_IO_IN_CLASS 10
 
@@ -85,11 +84,12 @@ void printOutput(struct Codec Data) {
 
     printf("\n%-30s %-10s %-20s %-20s\n", "Name", "Size", "Value", "Hex Value");
 
-    printf("%-30s %-10s\n", "TCP AVL Data Packet", "var");
     if(strcmp(Data.protocol, "TCP") == 0) {
+        printf("%-30s %-10s\n", "TCP AVL Data Packet", "var");
         printf("%-30s %-10d %-20d %-20.*X\n", "  Preamble", PREAMBLE_SIZE, Data.preamble, PREAMBLE_SIZE*2, Data.preamble);
         printf("%-30s %-10d %-20d %-20.*X\n", "  AVL Data Length", DATA_FIELD_LENGTH_SIZE, Data.dataFieldLength, DATA_FIELD_LENGTH_SIZE*2, Data.dataFieldLength);
     } else {
+        printf("%-30s %-10s\n", "UDP AVL Data Packet", "var");
         printf("%-30s %-10d %-20d %-20.*X\n", "  Length", LENGTH_SIZE, Data.totalLength, LENGTH_SIZE*2, Data.totalLength);
         printf("%-30s %-10d %-20d %-20.*X\n", "  Packet ID", PACKET_ID_SIZE, Data.packetID, PACKET_ID_SIZE*2, Data.packetID);
         printf("%-30s %-10d %-20d %-20.*X\n", "  Packet Type", PACKET_TYPE_SIZE, Data.packetType, PACKET_TYPE_SIZE*2, Data.packetType);
@@ -366,12 +366,8 @@ struct Codec sortToStruct(char inputData[], char protocol[]) {
 
 int main()
 {
-    char inputData[1000];// = "006FCAFE0118000F33353936333231303537363136373708010000017356F45D1001000000000000000000000000000000EF1409EF01F00050001503C8004502B3000200030008B50000B6000042398C18000043000044000009002B06002B03C70000000010000000000C0000000A0001";
-    //unsigned char hexArray[1000];
+    char inputData[2500];// = "006FCAFE0118000F33353936333231303537363136373708010000017356F45D1001000000000000000000000000000000EF1409EF01F00050001503C8004502B3000200030008B50000B6000042398C18000043000044000009002B06002B03C70000000010000000000C0000000A0001";
     char protocol[4];// = "UDP";
-    int codecID;
-
-    //MAKE GET DATA FUNCTION
 
     //Set protocol
     while(strcmp(protocol, "TCP") != 0 && strcmp(protocol, "UDP") != 0 ) {
@@ -384,7 +380,6 @@ int main()
             printf("%s protocol selected\n", &protocol);
         }
     }
-
     //Data input
     printf("Enter data:\n");
     scanf("%s", &inputData);
