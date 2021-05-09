@@ -29,9 +29,12 @@
 
 #define MAX_IO_IN_CLASS 10
 
+char inputData[2500];
+char protocol[4];
+
 struct AVL {
     //GPS
-    unsigned long timestamp;
+    unsigned long long timestamp;
     int priority;
     int longitude;
     int latitude;
@@ -62,7 +65,7 @@ struct Codec {
     int packetType;
     int AVLpacketID;
     int imeiLength;
-    unsigned long imei;
+    unsigned long long imei;
     //TCP
     int preamble;
     int dataFieldLength;
@@ -159,15 +162,15 @@ void printOutput(struct Codec Data) {
     }
 }
 
-int getHex(char data[], int place, int length) {
-    int temp[20];
+unsigned long getHex(int place, int length) {
+    int temp[40];
     memset(temp, 0, sizeof(temp));
-    strncat(temp, &data[place*2], length*2);
-    int hex = (unsigned long)strtol(temp, NULL, 16);
+    strncat(temp, &inputData[place*2], length*2);
+    unsigned long hex = (unsigned long)strtoul(temp, NULL, 16);
     return hex;
 }
 
-struct Codec sortToStruct(char inputData[], char protocol[]) {
+struct Codec sortToStruct() {
     struct Codec Data;
     int ioElementLength;
     int place = 0;
@@ -184,47 +187,47 @@ struct Codec sortToStruct(char inputData[], char protocol[]) {
         //Data Field Length
         place += length;
         length = DATA_FIELD_LENGTH_SIZE;
-        Data.dataFieldLength = getHex(inputData, place, length);
+        Data.dataFieldLength = getHex(place, length);
 
         //CRC
         int placeTmp = place + Data.dataFieldLength + 4;
         length = CRC16_SIZE;
-        Data.CRC16 = getHex(inputData, placeTmp, length);
+        Data.CRC16 = getHex(placeTmp, length);
     } else {
         //Length
         length = LENGTH_SIZE;
-        Data.totalLength = getHex(inputData, place, length);
+        Data.totalLength = getHex(place, length);
 
         //Packet ID
         place += length;
         length = PACKET_ID_SIZE;
-        Data.packetID = getHex(inputData, place, length);
+        Data.packetID = getHex(place, length);
 
         //Packet Type
         place += length;
         length = PACKET_TYPE_SIZE;
-        Data.packetType = getHex(inputData, place, length);
+        Data.packetType = getHex(place, length);
 
         //AVL packet ID
         place += length;
         length = AVL_PACKET_ID_SIZE;
-        Data.AVLpacketID = getHex(inputData, place, length);
+        Data.AVLpacketID = getHex(place, length);
 
         //IMEI length
         place += length;
         length = IMEI_LENGTH_SIZE;
-        Data.imeiLength = getHex(inputData, place, length);
+        Data.imeiLength = getHex(place, length);
 
         //IMEI
         place += length;
         length = Data.imeiLength;
-        Data.imei = getHex(inputData, place, length);
+        Data.imei = getHex(place, length);
     }
 
     //Codec ID
     place += length;
     length = CODEC_ID_SIZE;
-    Data.CodecID = getHex(inputData, place, length);
+    Data.CodecID = getHex(place, length);
     if(Data.CodecID == CODEC8) {
         ioElementLength = 1;
     } else {
@@ -234,17 +237,17 @@ struct Codec sortToStruct(char inputData[], char protocol[]) {
     //AVL Data Count 1
     int placeTmp = place + length;
     length = NUMBER_OF_DATA1_SIZE;
-    Data.NumberOfData1 = getHex(inputData, placeTmp, length);
+    Data.NumberOfData1 = getHex(placeTmp, length);
 
     //AVL Data Count 2
     if(strcmp(Data.protocol, "TCP") == 0) {
         placeTmp = place + Data.dataFieldLength - 1;
         length = NUMBER_OF_DATA2_SIZE;
-        Data.NumberOfData2 = getHex(inputData, placeTmp, length);
+        Data.NumberOfData2 = getHex(placeTmp, length);
     } else {
         placeTmp = Data.totalLength + 1;
         length = NUMBER_OF_DATA2_SIZE;
-        Data.NumberOfData2 = getHex(inputData, placeTmp, length);
+        Data.NumberOfData2 = getHex(placeTmp, length);
     }
 
 
@@ -252,108 +255,108 @@ struct Codec sortToStruct(char inputData[], char protocol[]) {
     //Timestamp
     place += NUMBER_OF_DATA1_SIZE + 1;
     length = TIMESTAMP_SIZE;
-    Data.AVLdata.timestamp = strtoul("00000177873D3F10", NULL, 16); //fix to unsigned long
+    Data.AVLdata.timestamp = strtoul(inputData, NULL, 16);
 
     //Priority
     place += length;
     length = PRIORITY_SIZE;
-    Data.AVLdata.priority = getHex(inputData, place, length);
+    Data.AVLdata.priority = getHex(place, length);
 
     //GPS
     //Longitude
     place += length;
     length = LONGITUDE_SIZE;
-    Data.AVLdata.longitude = getHex(inputData, place, length);
+    Data.AVLdata.longitude = getHex(place, length);
     //Latitude
     place += length;
     length = LATITUDE_SIZE;
-    Data.AVLdata.latitude = getHex(inputData, place, length);
+    Data.AVLdata.latitude = getHex(place, length);
     //Altitude
     place += length;
     length = ALTITUDE_SIZE;
-    Data.AVLdata.altitude = getHex(inputData, place, length);
+    Data.AVLdata.altitude = getHex(place, length);
     //Angle
     place += length;
     length = ANGLE_SIZE;
-    Data.AVLdata.angle = getHex(inputData, place, length);
+    Data.AVLdata.angle = getHex(place, length);
     //Satellites
     place += length;
     length = SATELLITES_SIZE;
-    Data.AVLdata.satellites = getHex(inputData, place, length);
+    Data.AVLdata.satellites = getHex(place, length);
     //Speed
     place += length;
     length = SPEED_SIZE;
-    Data.AVLdata.speed = getHex(inputData, place, length);
+    Data.AVLdata.speed = getHex(place, length);
 
     //IO
     //Event ID
     place += length;
     length = ioElementLength;
-    Data.AVLdata.enentID = getHex(inputData, place, length);
+    Data.AVLdata.enentID = getHex(place, length);
     //Element count
     place += length;
     length = ioElementLength;
-    Data.AVLdata.totalElementCount = getHex(inputData, place, length);
+    Data.AVLdata.totalElementCount = getHex(place, length);
     //1b Elements
     place += length;
     length = ioElementLength;
-    Data.AVLdata.elementCount1b = getHex(inputData, place, length);
+    Data.AVLdata.elementCount1b = getHex(place, length);
     for(int i = 0; i < Data.AVLdata.elementCount1b; i++) {
         place += length;
         length = ioElementLength;
-        Data.AVLdata.elements1b[i][0] = getHex(inputData, place, length);
+        Data.AVLdata.elements1b[i][0] = getHex(place, length);
         place += length;
         length = 1;
-        Data.AVLdata.elements1b[i][1] = getHex(inputData, place, length);
+        Data.AVLdata.elements1b[i][1] = getHex(place, length);
     }
     //2b Elements
     place += length;
     length = ioElementLength;
-    Data.AVLdata.elementCount2b = getHex(inputData, place, length);
+    Data.AVLdata.elementCount2b = getHex(place, length);
     for(int i = 0; i < Data.AVLdata.elementCount2b; i++) {
         place += length;
         length = ioElementLength;
-        Data.AVLdata.elements2b[i][0] = getHex(inputData, place, length);
+        Data.AVLdata.elements2b[i][0] = getHex(place, length);
         place += length;
         length = 2;
-        Data.AVLdata.elements2b[i][1] = getHex(inputData, place, length);
+        Data.AVLdata.elements2b[i][1] = getHex(place, length);
     }
     //4b Elements
     place += length;
     length = ioElementLength;
-    Data.AVLdata.elementCount4b = getHex(inputData, place, length);
+    Data.AVLdata.elementCount4b = getHex(place, length);
     for(int i = 0; i < Data.AVLdata.elementCount4b; i++) {
         place += length;
         length = ioElementLength;
-        Data.AVLdata.elements4b[i][0] = getHex(inputData, place, length);
+        Data.AVLdata.elements4b[i][0] = getHex(place, length);
         place += length;
         length = 4;
-        Data.AVLdata.elements4b[i][1] = getHex(inputData, place, length);
+        Data.AVLdata.elements4b[i][1] = getHex(place, length);
     }
     //8b Elements
     place += length;
     length = ioElementLength;
-    Data.AVLdata.elementCount8b = getHex(inputData, place, length);
+    Data.AVLdata.elementCount8b = getHex(place, length);
     for(int i = 0; i < Data.AVLdata.elementCount8b; i++) {
         place += length;
         length = ioElementLength;
-        Data.AVLdata.elements8b[i][0] = getHex(inputData, place, length);
+        Data.AVLdata.elements8b[i][0] = getHex(place, length);
         place += length;
         length = 8;
-        Data.AVLdata.elements8b[i][1] = getHex(inputData, place, length);
+        Data.AVLdata.elements8b[i][1] = getHex(place, length);
     }
     //Xb Elmenets
     if(Data.CodecID == CODEC8EXT) {
         place += length;
         length = ioElementLength;
-        Data.AVLdata.elementCountXb = getHex(inputData, place, length);
+        Data.AVLdata.elementCountXb = getHex(place, length);
         for(int i = 0; i < Data.AVLdata.elementCountXb; i++) {
             place += length;
             length = ioElementLength;
-            Data.AVLdata.elementsXb[i][0] = getHex(inputData, place, length);
+            Data.AVLdata.elementsXb[i][0] = getHex(place, length);
             place += length;
             length = 17;
-            Data.AVLdata.elementsXb[i][1] = getHex(inputData, place, length);
+            Data.AVLdata.elementsXb[i][1] = getHex(place, length);
         }
     }
 
@@ -364,12 +367,7 @@ struct Codec sortToStruct(char inputData[], char protocol[]) {
     return Data;
 }
 
-int main()
-{
-    char inputData[2500];// = "006FCAFE0118000F33353936333231303537363136373708010000017356F45D1001000000000000000000000000000000EF1409EF01F00050001503C8004502B3000200030008B50000B6000042398C18000043000044000009002B06002B03C70000000010000000000C0000000A0001";
-    char protocol[4];// = "UDP";
-
-    //Set protocol
+void setProtocol() {
     while(strcmp(protocol, "TCP") != 0 && strcmp(protocol, "UDP") != 0 ) {
         printf("Enter protocol (TCP or UDP):\n");
         scanf("%s", &protocol);
@@ -380,12 +378,19 @@ int main()
             printf("%s protocol selected\n", &protocol);
         }
     }
-    //Data input
+}
+
+void getData() {
     printf("Enter data:\n");
     scanf("%s", &inputData);
+}
+
+int main(){
+    setProtocol();
+    getData();
 
     //Sort to Structure
-    struct Codec Data = sortToStruct(inputData, protocol);
+    struct Codec Data = sortToStruct();
 
     printOutput(Data);
 
